@@ -1,8 +1,8 @@
 export default function Home() {
   return (
     <main>
-      <h1>Referent</h1>
-      <p>Референт-переводчик с ИИ-обработкой</p>
+      <h1>Привет, Next.js!</h1>
+      <p>Я изучаю Next.js</p>
     </main>
   );
 }

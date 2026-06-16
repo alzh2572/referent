@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ACTION_LABELS, type ArticleAction } from "@/lib/article-actions";
+import { fetchAndParseArticle } from "@/lib/parse-article";
 
 const ACTIONS: ArticleAction[] = ["summary", "theses", "telegram"];
 
@@ -20,14 +21,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Выберите действие" }, { status: 400 });
   }
 
-  await new Promise((resolve) => setTimeout(resolve, 900));
+  try {
+    const article = await fetchAndParseArticle(url);
+    const result = JSON.stringify(article, null, 2);
 
-  const result = [
-    `Действие: ${ACTION_LABELS[action]}`,
-    `Статья: ${url}`,
-    "",
-    "Здесь появится результат после подключения парсинга и AI.",
-  ].join("\n");
+    return NextResponse.json({
+      result,
+      action: ACTION_LABELS[action],
+      article,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Не удалось обработать статью";
 
-  return NextResponse.json({ result });
+    return NextResponse.json({ error: message }, { status: 422 });
+  }
 }

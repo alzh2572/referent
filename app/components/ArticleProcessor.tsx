@@ -101,7 +101,7 @@ export function ArticleProcessor() {
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-medium text-slate-900">Результат</h2>
           {loading && (
-            <span className="text-sm text-sky-600">Генерация ответа…</span>
+            <span className="text-sm text-sky-600">Парсинг статьи…</span>
           )}
         </div>
 
@@ -115,9 +115,9 @@ export function ArticleProcessor() {
               <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200" />
             </div>
           ) : result ? (
-            <p className="whitespace-pre-wrap text-sm leading-7 text-slate-800">
+            <pre className="overflow-x-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-6 text-slate-800">
               {result}
-            </p>
+            </pre>
           ) : (
             <p className="text-sm text-slate-500">
               {activeAction

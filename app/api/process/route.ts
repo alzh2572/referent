@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { ACTION_LABELS, type ArticleAction } from "@/lib/article-actions";
+import { translateArticleText } from "@/lib/openrouter";
 import { fetchAndParseArticle } from "@/lib/parse-article";
 
-const ACTIONS: ArticleAction[] = ["summary", "theses", "telegram"];
+const ACTIONS: ArticleAction[] = ["summary", "theses", "telegram", "translate"];
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
@@ -23,6 +24,17 @@ export async function POST(request: Request) {
 
   try {
     const article = await fetchAndParseArticle(url);
+
+    if (action === "translate") {
+      const translation = await translateArticleText(article);
+
+      return NextResponse.json({
+        result: translation,
+        action: ACTION_LABELS[action],
+        article,
+      });
+    }
+
     const result = JSON.stringify(article, null, 2);
 
     return NextResponse.json({

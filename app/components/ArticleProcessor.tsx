@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   ACTION_LABELS,
+  ACTION_LOADING_LABELS,
   ACTION_PLACEHOLDERS,
   type ArticleAction,
 } from "@/lib/article-actions";
@@ -100,8 +101,10 @@ export function ArticleProcessor() {
       <section className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-medium text-slate-900">Результат</h2>
-          {loading && (
-            <span className="text-sm text-sky-600">Парсинг статьи…</span>
+          {loading && activeAction && (
+            <span className="text-sm text-sky-600">
+              {ACTION_LOADING_LABELS[activeAction]}
+            </span>
           )}
         </div>
 
@@ -115,9 +118,15 @@ export function ArticleProcessor() {
               <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200" />
             </div>
           ) : result ? (
-            <pre className="overflow-x-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-6 text-slate-800">
-              {result}
-            </pre>
+            activeAction === "translate" ? (
+              <p className="whitespace-pre-wrap text-sm leading-7 text-slate-800">
+                {result}
+              </p>
+            ) : (
+              <pre className="overflow-x-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-6 text-slate-800">
+                {result}
+              </pre>
+            )
           ) : (
             <p className="text-sm text-slate-500">
               {activeAction

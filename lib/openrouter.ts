@@ -1,5 +1,7 @@
+import type { ParsedArticle } from "@/lib/parse-article";
+
 const DEFAULT_MODEL = "deepseek/deepseek-chat";
-const MAX_CONTENT_LENGTH = 12000;
+export const MAX_CONTENT_LENGTH = 12000;
 
 type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -63,27 +65,27 @@ export async function createChatCompletion(
   return content;
 }
 
-export async function translateArticleText(input: {
-  title: string | null;
-  date: string | null;
-  content: string | null;
-}): Promise<string> {
-  if (!input.content?.trim()) {
-    throw new Error("В статье не найден текст для перевода");
+export function formatArticleForPrompt(article: ParsedArticle): string {
+  if (!article.content?.trim()) {
+    throw new Error("В статье не найден текст для обработки");
   }
 
   const content =
-    input.content.length > MAX_CONTENT_LENGTH
-      ? `${input.content.slice(0, MAX_CONTENT_LENGTH)}\n\n[Текст обрезан для перевода]`
-      : input.content;
+    article.content.length > MAX_CONTENT_LENGTH
+      ? `${article.content.slice(0, MAX_CONTENT_LENGTH)}\n\n[Текст обрезан]`
+      : article.content;
 
-  const articleParts = [
-    input.title ? `Title: ${input.title}` : null,
-    input.date ? `Date: ${input.date}` : null,
+  return [
+    article.title ? `Title: ${article.title}` : null,
+    article.date ? `Date: ${article.date}` : null,
     `Content:\n${content}`,
   ]
     .filter(Boolean)
     .join("\n\n");
+}
+
+export async function translateArticleText(article: ParsedArticle): Promise<string> {
+  const articleParts = formatArticleForPrompt(article);
 
   return createChatCompletion([
     {

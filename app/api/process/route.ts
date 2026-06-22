@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       result,
       action: ACTION_LABELS[action],
       article,
+      ...(action === "telegram" && { sourceUrl: url }),
     });
   } catch (error) {
     const message =

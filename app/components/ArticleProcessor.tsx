@@ -7,10 +7,12 @@ import {
   ACTION_PLACEHOLDERS,
   type ArticleAction,
 } from "@/lib/article-actions";
+import { stripTelegramSourceSuffix } from "@/lib/openrouter";
 
 export function ArticleProcessor() {
   const [url, setUrl] = useState("");
   const [result, setResult] = useState("");
+  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [activeAction, setActiveAction] = useState<ArticleAction | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,6 +28,7 @@ export function ArticleProcessor() {
     setLoading(true);
     setError("");
     setResult("");
+    setSourceUrl(null);
 
     try {
       const response = await fetch("/api/process", {
@@ -39,8 +42,12 @@ export function ArticleProcessor() {
         throw new Error(data.error ?? "Не удалось обработать статью");
       }
 
-      const data = (await response.json()) as { result: string };
+      const data = (await response.json()) as {
+        result: string;
+        sourceUrl?: string;
+      };
       setResult(data.result);
+      setSourceUrl(data.sourceUrl ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Произошла ошибка");
     } finally {
@@ -118,9 +125,28 @@ export function ArticleProcessor() {
               <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200" />
             </div>
           ) : result ? (
-            <p className="whitespace-pre-wrap text-sm leading-7 text-slate-800">
-              {result}
-            </p>
+            activeAction === "telegram" && sourceUrl ? (
+              <div className="text-sm leading-7 text-slate-800">
+                <p className="whitespace-pre-wrap">
+                  {stripTelegramSourceSuffix(result, sourceUrl)}
+                </p>
+                <p className="mt-4 border-t border-slate-100 pt-4">
+                  Источник:{" "}
+                  <a
+                    href={sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sky-600 underline decoration-sky-300 underline-offset-2 hover:text-sky-700"
+                  >
+                    {sourceUrl}
+                  </a>
+                </p>
+              </div>
+            ) : (
+              <p className="whitespace-pre-wrap text-sm leading-7 text-slate-800">
+                {result}
+              </p>
+            )
           ) : (
             <p className="text-sm text-slate-500">
               {activeAction

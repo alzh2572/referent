@@ -126,6 +126,18 @@ export async function extractTheses(article: ParsedArticle): Promise<string> {
   );
 }
 
+export function formatTelegramSourceLine(sourceUrl: string): string {
+  return `Источник: ${sourceUrl}`;
+}
+
+export function stripTelegramSourceSuffix(
+  result: string,
+  sourceUrl: string,
+): string {
+  const suffix = `\n\n${formatTelegramSourceLine(sourceUrl)}`;
+  return result.endsWith(suffix) ? result.slice(0, -suffix.length).trimEnd() : result;
+}
+
 export async function generateTelegramPost(
   article: ParsedArticle,
   sourceUrl: string,
@@ -157,5 +169,5 @@ ${articleParts}`,
     0.5,
   );
 
-  return `${post}\n\nИсточник: ${sourceUrl}`;
+  return `${post}\n\n${formatTelegramSourceLine(sourceUrl)}`;
 }

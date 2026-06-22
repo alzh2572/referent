@@ -24,7 +24,9 @@ function getOpenRouterConfig() {
   const baseUrl = process.env.OPENAI_BASE_URL ?? "https://openrouter.ai/api/v1";
 
   if (!apiKey) {
-    throw new Error("OPENROUTER_API_KEY не задан в .env.local");
+    throw new Error(
+      "OPENROUTER_API_KEY не задан. Добавьте ключ в .env.local локально или в Environment Variables на Vercel.",
+    );
   }
 
   return { apiKey, baseUrl };
@@ -33,6 +35,7 @@ function getOpenRouterConfig() {
 export async function createChatCompletion(
   messages: ChatMessage[],
   model = DEFAULT_MODEL,
+  temperature = 0.3,
 ): Promise<string> {
   const { apiKey, baseUrl } = getOpenRouterConfig();
 
@@ -45,7 +48,7 @@ export async function createChatCompletion(
     body: JSON.stringify({
       model,
       messages,
-      temperature: 0.3,
+      temperature,
     }),
     signal: AbortSignal.timeout(120000),
   });
@@ -59,7 +62,7 @@ export async function createChatCompletion(
   const content = data.choices?.[0]?.message?.content?.trim();
 
   if (!content) {
-    throw new Error("OpenRouter не вернул текст перевода");
+    throw new Error("OpenRouter не вернул текст ответа");
   }
 
   return content;
@@ -82,6 +85,74 @@ export function formatArticleForPrompt(article: ParsedArticle): string {
   ]
     .filter(Boolean)
     .join("\n\n");
+}
+
+export async function summarizeArticle(article: ParsedArticle): Promise<string> {
+  const articleParts = formatArticleForPrompt(article);
+
+  return createChatCompletion(
+    [
+      {
+        role: "system",
+        content:
+          "You are a professional editor. You analyze English articles and respond in Russian. Return only the final answer without explanations or meta-commentary.",
+      },
+      {
+        role: "user",
+        content: `Briefly explain what this article is about in 3-5 sentences in Russian. Mention the topic, the key idea, and the target audience.\n\n${articleParts}`,
+      },
+    ],
+    DEFAULT_MODEL,
+  );
+}
+
+export async function extractTheses(article: ParsedArticle): Promise<string> {
+  const articleParts = formatArticleForPrompt(article);
+
+  return createChatCompletion(
+    [
+      {
+        role: "system",
+        content:
+          "You are an analyst. You extract key ideas from English articles and respond in Russian. Return only the final answer without explanations or meta-commentary.",
+      },
+      {
+        role: "user",
+        content: `Extract 5-10 key theses from this article as a markdown bullet list in Russian. Each thesis must be one concise idea. Use the format "- thesis".\n\n${articleParts}`,
+      },
+    ],
+    DEFAULT_MODEL,
+    0.2,
+  );
+}
+
+export async function generateTelegramPost(article: ParsedArticle): Promise<string> {
+  const articleParts = formatArticleForPrompt(article);
+
+  return createChatCompletion(
+    [
+      {
+        role: "system",
+        content:
+          "You are an SMM editor writing posts for a Telegram channel in Russian. Return only the final post without explanations or meta-commentary. Keep the post under 1500 characters.",
+      },
+      {
+        role: "user",
+        content: `Write a Telegram post in Russian based on this article. Structure:
+1. Catchy headline (1 line)
+2. Brief lead (2-3 sentences)
+3. 3-5 bullet points with the main ideas
+4. Call to action or a question for the audience
+5. 2-4 relevant hashtags at the end
+
+Keep the total length under 1500 characters.
+
+${articleParts}`,
+      },
+    ],
+    DEFAULT_MODEL,
+    0.5,
+  );
 }
 
 export async function translateArticleText(article: ParsedArticle): Promise<string> {

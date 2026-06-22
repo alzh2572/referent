@@ -118,15 +118,9 @@ export function ArticleProcessor() {
               <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200" />
             </div>
           ) : result ? (
-            activeAction === "translate" ? (
-              <p className="whitespace-pre-wrap text-sm leading-7 text-slate-800">
-                {result}
-              </p>
-            ) : (
-              <pre className="overflow-x-auto whitespace-pre-wrap wrap-break-word font-mono text-sm leading-6 text-slate-800">
-                {result}
-              </pre>
-            )
+            <p className="whitespace-pre-wrap text-sm leading-7 text-slate-800">
+              {result}
+            </p>
           ) : (
             <p className="text-sm text-slate-500">
               {activeAction

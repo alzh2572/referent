@@ -126,15 +126,18 @@ export async function extractTheses(article: ParsedArticle): Promise<string> {
   );
 }
 
-export async function generateTelegramPost(article: ParsedArticle): Promise<string> {
+export async function generateTelegramPost(
+  article: ParsedArticle,
+  sourceUrl: string,
+): Promise<string> {
   const articleParts = formatArticleForPrompt(article);
 
-  return createChatCompletion(
+  const post = await createChatCompletion(
     [
       {
         role: "system",
         content:
-          "You are an SMM editor writing posts for a Telegram channel in Russian. Return only the final post without explanations or meta-commentary. Keep the post under 1500 characters.",
+          "You are an SMM editor writing posts for a Telegram channel in Russian. Return only the final post without explanations or meta-commentary. Keep the post under 1400 characters — a source link will be appended separately.",
       },
       {
         role: "user",
@@ -145,7 +148,7 @@ export async function generateTelegramPost(article: ParsedArticle): Promise<stri
 4. Call to action or a question for the audience
 5. 2-4 relevant hashtags at the end
 
-Keep the total length under 1500 characters.
+Do not include the source URL — it will be added automatically.
 
 ${articleParts}`,
       },
@@ -153,4 +156,6 @@ ${articleParts}`,
     DEFAULT_MODEL,
     0.5,
   );
+
+  return `${post}\n\nИсточник: ${sourceUrl}`;
 }

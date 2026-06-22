@@ -12,6 +12,7 @@ const ACTIONS: ArticleAction[] = ["summary", "theses", "telegram"];
 async function processArticleAction(
   action: ArticleAction,
   article: ParsedArticle,
+  url: string,
 ): Promise<string> {
   switch (action) {
     case "summary":
@@ -19,7 +20,7 @@ async function processArticleAction(
     case "theses":
       return extractTheses(article);
     case "telegram":
-      return generateTelegramPost(article);
+      return generateTelegramPost(article, url);
   }
 }
 
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
 
   try {
     const article = await fetchAndParseArticle(url);
-    const result = await processArticleAction(action, article);
+    const result = await processArticleAction(action, article, url);
 
     return NextResponse.json({
       result,

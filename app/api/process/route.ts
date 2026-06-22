@@ -4,11 +4,10 @@ import {
   extractTheses,
   generateTelegramPost,
   summarizeArticle,
-  translateArticleText,
 } from "@/lib/openrouter";
 import { fetchAndParseArticle, type ParsedArticle } from "@/lib/parse-article";
 
-const ACTIONS: ArticleAction[] = ["summary", "theses", "telegram", "translate"];
+const ACTIONS: ArticleAction[] = ["summary", "theses", "telegram"];
 
 async function processArticleAction(
   action: ArticleAction,
@@ -21,8 +20,6 @@ async function processArticleAction(
       return extractTheses(article);
     case "telegram":
       return generateTelegramPost(article);
-    case "translate":
-      return translateArticleText(article);
   }
 }
 

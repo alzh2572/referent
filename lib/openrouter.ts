@@ -154,19 +154,3 @@ ${articleParts}`,
     0.5,
   );
 }
-
-export async function translateArticleText(article: ParsedArticle): Promise<string> {
-  const articleParts = formatArticleForPrompt(article);
-
-  return createChatCompletion([
-    {
-      role: "system",
-      content:
-        "You are a professional translator. Translate English articles into Russian. Preserve meaning, tone, and paragraph structure. Return only the translation in Russian without explanations.",
-    },
-    {
-      role: "user",
-      content: `Translate this article to Russian:\n\n${articleParts}`,
-    },
-  ]);
-}

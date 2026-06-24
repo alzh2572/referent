@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ACTION_LABELS,
   ACTION_LOADING_LABELS,
@@ -20,6 +20,9 @@ import { CircleAlert } from "lucide-react";
 const FETCHING_ARTICLE_MESSAGE = "Загружаю статью…";
 
 export function ArticleProcessor() {
+  const resultSectionRef = useRef<HTMLElement>(null);
+  const requestIdRef = useRef(0);
+
   const [url, setUrl] = useState("");
   const [result, setResult] = useState("");
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
@@ -27,8 +30,12 @@ export function ArticleProcessor() {
   const [loading, setLoading] = useState(false);
   const [processMessage, setProcessMessage] = useState<string | null>(null);
   const [error, setError] = useState<ApiErrorBody | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const isUrlValid = url.trim().length > 0;
+  const canClear =
+    Boolean(url || result || error || activeAction || loading || processMessage);
+  const canCopy = Boolean(result && !loading);
 
   useEffect(() => {
     if (!loading || !activeAction) {
@@ -42,6 +49,41 @@ export function ArticleProcessor() {
     return () => window.clearTimeout(timer);
   }, [loading, activeAction]);
 
+  function handleClear() {
+    requestIdRef.current += 1;
+    setUrl("");
+    setResult("");
+    setSourceUrl(null);
+    setActiveAction(null);
+    setLoading(false);
+    setProcessMessage(null);
+    setError(null);
+    setCopied(false);
+  }
+
+  async function handleCopy() {
+    if (!result) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(result);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError({ code: "UNKNOWN", message: ERROR_MESSAGES.UNKNOWN });
+    }
+  }
+
+  function scrollToResults() {
+    requestAnimationFrame(() => {
+      resultSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }
+
   async function handleAction(action: ArticleAction) {
     if (!isUrlValid || loading) {
       return;
@@ -54,6 +96,9 @@ export function ArticleProcessor() {
     setResult("");
     setSourceUrl(null);
 
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
     try {
       const response = await fetch("/api/process", {
         method: "POST",
@@ -63,6 +108,9 @@ export function ArticleProcessor() {
 
       if (!response.ok) {
         const data = (await response.json()) as { error?: ApiErrorBody };
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
         setError(
           data.error ?? { code: "UNKNOWN", message: ERROR_MESSAGES.UNKNOWN },
         );
@@ -73,11 +121,21 @@ export function ArticleProcessor() {
         result: string;
         sourceUrl?: string;
       };
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
       setResult(data.result);
       setSourceUrl(data.sourceUrl ?? null);
+      scrollToResults();
     } catch {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
       setError({ code: "UNKNOWN", message: ERROR_MESSAGES.UNKNOWN });
     } finally {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
       setLoading(false);
       setProcessMessage(null);
     }
@@ -98,9 +156,19 @@ export function ArticleProcessor() {
       </header>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <label htmlFor="article-url" className="block text-sm font-medium text-slate-700">
-          URL англоязычной статьи
-        </label>
+        <div className="flex items-center justify-between gap-3">
+          <label htmlFor="article-url" className="text-sm font-medium text-slate-700">
+            URL англоязычной статьи
+          </label>
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={!canClear}
+            className="rounded-xl border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Очистить
+          </button>
+        </div>
         <input
           id="article-url"
           type="url"
@@ -140,15 +208,26 @@ export function ArticleProcessor() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+      <section
+        ref={resultSectionRef}
+        className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm scroll-mt-6"
+      >
         {processMessage && (
           <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800">
             {processMessage}
           </div>
         )}
 
-        <div className="mb-3">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-medium text-slate-900">Результат</h2>
+          <button
+            type="button"
+            onClick={handleCopy}
+            disabled={!canCopy}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {copied ? "Скопировано" : "Копировать"}
+          </button>
         </div>
 
         <div className="min-h-48 rounded-xl border border-slate-200 bg-white p-4">

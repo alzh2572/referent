@@ -112,8 +112,11 @@ export function ArticleProcessor() {
         <p className="mt-2 text-xs text-slate-500">
           Укажите ссылку на англоязычную статью
         </p>
+      </section>
 
-        <div className="mt-5 flex flex-wrap gap-3">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-medium text-slate-700">Выберите действие</h2>
+        <div className="mt-4 flex flex-wrap gap-3">
           {(Object.keys(ACTION_LABELS) as ArticleAction[]).map((action) => {
             const isActive = activeAction === action && (loading || result.length > 0);
 

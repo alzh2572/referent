@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { CheerioAPI } from "cheerio";
+import { AppError } from "@/lib/errors";
 
 export type ParsedArticle = {
   date: string | null;
@@ -146,31 +147,37 @@ export async function fetchAndParseArticle(url: string): Promise<ParsedArticle> 
   try {
     parsedUrl = new URL(url);
   } catch {
-    throw new Error("Некорректный URL");
+    throw new AppError("INVALID_URL");
   }
 
   if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-    throw new Error("Поддерживаются только HTTP и HTTPS");
+    throw new AppError("UNSUPPORTED_PROTOCOL");
   }
 
-  const response = await fetch(parsedUrl.toString(), {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; ReferentBot/1.0)",
-      Accept: "text/html,application/xhtml+xml",
-    },
-    signal: AbortSignal.timeout(15000),
-    redirect: "follow",
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(parsedUrl.toString(), {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; ReferentBot/1.0)",
+        Accept: "text/html,application/xhtml+xml",
+      },
+      signal: AbortSignal.timeout(15000),
+      redirect: "follow",
+    });
+  } catch {
+    throw new AppError("FETCH_FAILED");
+  }
 
   if (!response.ok) {
-    throw new Error(`Не удалось загрузить страницу (${response.status})`);
+    throw new AppError("FETCH_FAILED");
   }
 
   const html = await response.text();
   const article = parseArticleHtml(html);
 
   if (!article.title && !article.content) {
-    throw new Error("Не удалось извлечь заголовок и содержимое статьи");
+    throw new AppError("PARSE_FAILED");
   }
 
   return article;

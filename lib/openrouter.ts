@@ -1,4 +1,5 @@
 import type { ParsedArticle } from "@/lib/parse-article";
+import { AppError } from "@/lib/errors";
 
 const DEFAULT_MODEL = "deepseek/deepseek-chat";
 export const MAX_CONTENT_LENGTH = 12000;
@@ -24,9 +25,7 @@ function getOpenRouterConfig() {
   const baseUrl = process.env.OPENAI_BASE_URL ?? "https://openrouter.ai/api/v1";
 
   if (!apiKey) {
-    throw new Error(
-      "OPENROUTER_API_KEY не задан. Добавьте ключ в .env.local локально или в Environment Variables на Vercel.",
-    );
+    throw new AppError("AI_CONFIG_ERROR");
   }
 
   return { apiKey, baseUrl };
@@ -39,30 +38,36 @@ export async function createChatCompletion(
 ): Promise<string> {
   const { apiKey, baseUrl } = getOpenRouterConfig();
 
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature,
-    }),
-    signal: AbortSignal.timeout(120000),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+      }),
+      signal: AbortSignal.timeout(120000),
+    });
+  } catch {
+    throw new AppError("AI_TIMEOUT");
+  }
 
   const data = (await response.json()) as ChatCompletionResponse;
 
   if (!response.ok) {
-    throw new Error(data.error?.message ?? `OpenRouter вернул ошибку (${response.status})`);
+    throw new AppError("AI_FAILED");
   }
 
   const content = data.choices?.[0]?.message?.content?.trim();
 
   if (!content) {
-    throw new Error("OpenRouter не вернул текст ответа");
+    throw new AppError("AI_FAILED");
   }
 
   return content;
@@ -70,7 +75,7 @@ export async function createChatCompletion(
 
 export function formatArticleForPrompt(article: ParsedArticle): string {
   if (!article.content?.trim()) {
-    throw new Error("В статье не найден текст для обработки");
+    throw new AppError("EMPTY_CONTENT");
   }
 
   const content =

@@ -8,7 +8,14 @@ import {
   ACTION_TITLES,
   type ArticleAction,
 } from "@/lib/article-actions";
+import {
+  ERROR_MESSAGES,
+  getErrorTitle,
+  type ApiErrorBody,
+} from "@/lib/errors";
 import { stripTelegramSourceSuffix } from "@/lib/openrouter";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CircleAlert } from "lucide-react";
 
 const FETCHING_ARTICLE_MESSAGE = "Загружаю статью…";
 
@@ -19,7 +26,7 @@ export function ArticleProcessor() {
   const [activeAction, setActiveAction] = useState<ArticleAction | null>(null);
   const [loading, setLoading] = useState(false);
   const [processMessage, setProcessMessage] = useState<string | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<ApiErrorBody | null>(null);
 
   const isUrlValid = url.trim().length > 0;
 
@@ -43,7 +50,7 @@ export function ArticleProcessor() {
     setActiveAction(action);
     setLoading(true);
     setProcessMessage(FETCHING_ARTICLE_MESSAGE);
-    setError("");
+    setError(null);
     setResult("");
     setSourceUrl(null);
 
@@ -55,8 +62,11 @@ export function ArticleProcessor() {
       });
 
       if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        throw new Error(data.error ?? "Не удалось обработать статью");
+        const data = (await response.json()) as { error?: ApiErrorBody };
+        setError(
+          data.error ?? { code: "UNKNOWN", message: ERROR_MESSAGES.UNKNOWN },
+        );
+        return;
       }
 
       const data = (await response.json()) as {
@@ -65,8 +75,8 @@ export function ArticleProcessor() {
       };
       setResult(data.result);
       setSourceUrl(data.sourceUrl ?? null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Произошла ошибка");
+    } catch {
+      setError({ code: "UNKNOWN", message: ERROR_MESSAGES.UNKNOWN });
     } finally {
       setLoading(false);
       setProcessMessage(null);
@@ -140,7 +150,11 @@ export function ArticleProcessor() {
 
         <div className="min-h-48 rounded-xl border border-slate-200 bg-white p-4">
           {error ? (
-            <p className="text-sm text-red-600">{error}</p>
+            <Alert variant="destructive">
+              <CircleAlert />
+              <AlertTitle>{getErrorTitle(error.code)}</AlertTitle>
+              <AlertDescription>{error.message}</AlertDescription>
+            </Alert>
           ) : loading ? (
             <div className="space-y-3">
               <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />

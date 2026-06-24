@@ -17,3 +17,9 @@ export const ACTION_LOADING_LABELS: Record<ArticleAction, string> = {
   theses: "Формирование тезисов…",
   telegram: "Подготовка поста…",
 };
+
+export const ACTION_TITLES: Record<ArticleAction, string> = {
+  summary: "Кратко объяснить, о чём статья: тема, главная мысль и аудитория",
+  theses: "Выделить 5–10 ключевых тезисов статьи списком",
+  telegram: "Собрать пост для Telegram с заголовком, тезисами и ссылкой на источник",
+};

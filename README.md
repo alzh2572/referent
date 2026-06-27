@@ -9,7 +9,7 @@ PLAN.md - план разработки
 ```powershell
 pnpm install
 Copy-Item .env.example .env.local
-# Откройте .env.local и вставьте ключ OpenRouter
+# Откройте .env.local и вставьте ключи OpenRouter и Hugging Face
 pnpm dev
 ```
 
@@ -20,13 +20,17 @@ pnpm dev
 | Переменная | Обязательна | Описание |
 |------------|-------------|----------|
 | `OPENROUTER_API_KEY` | да | API-ключ [OpenRouter](https://openrouter.ai/) |
+| `HUGGINGFACE_API_KEY` | да* | API-ключ [Hugging Face](https://huggingface.co/settings/tokens) для «Иллюстрация» |
 | `OPENAI_BASE_URL` | нет | По умолчанию `https://openrouter.ai/api/v1` |
+| `HUGGINGFACE_IMAGE_MODEL` | нет | По умолчанию `black-forest-labs/FLUX.1-schnell` |
+
+\* Обязателен только для генерации иллюстраций.
 
 ## Деплой на Vercel
 
 1. Импортируйте репозиторий на [vercel.com](https://vercel.com).
 2. Откройте проект → **Settings** → **Environment Variables** (в левом меню).
-3. Добавьте `OPENROUTER_API_KEY` для **Production**, **Preview** и **Development**.
+3. Добавьте `OPENROUTER_API_KEY` и `HUGGINGFACE_API_KEY` для **Production**, **Preview** и **Development**.
 4. Нажмите **Save** и выполните **Redeploy** — старый деплой не подхватит новые переменные.
 
 Через CLI:

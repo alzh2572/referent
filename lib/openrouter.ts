@@ -176,3 +176,25 @@ ${articleParts}`,
 
   return `${post}\n\n${formatTelegramSourceLine(sourceUrl)}`;
 }
+
+export async function createIllustrationPrompt(
+  article: ParsedArticle,
+): Promise<string> {
+  const articleParts = formatArticleForPrompt(article);
+
+  return createChatCompletion(
+    [
+      {
+        role: "system",
+        content:
+          "You create concise English prompts for text-to-image AI. Return only the prompt without explanations, quotes, or markdown. Maximum 120 words. Describe one editorial illustration that visually captures the article's main theme, mood, and key symbols.",
+      },
+      {
+        role: "user",
+        content: `Create an image generation prompt for an editorial illustration based on this article:\n\n${articleParts}`,
+      },
+    ],
+    DEFAULT_MODEL,
+    0.7,
+  );
+}

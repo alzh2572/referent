@@ -6,6 +6,7 @@ import {
   ACTION_LOADING_LABELS,
   ACTION_PLACEHOLDERS,
   ACTION_TITLES,
+  ILLUSTRATION_IMAGE_LOADING_LABEL,
   type ArticleAction,
 } from "@/lib/article-actions";
 import {
@@ -25,6 +26,8 @@ export function ArticleProcessor() {
 
   const [url, setUrl] = useState("");
   const [result, setResult] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imagePrompt, setImagePrompt] = useState<string | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [activeAction, setActiveAction] = useState<ArticleAction | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,25 +37,56 @@ export function ArticleProcessor() {
 
   const isUrlValid = url.trim().length > 0;
   const canClear =
-    Boolean(url || result || error || activeAction || loading || processMessage);
-  const canCopy = Boolean(result && !loading);
+    Boolean(
+      url ||
+        result ||
+        imageUrl ||
+        imagePrompt ||
+        error ||
+        activeAction ||
+        loading ||
+        processMessage,
+    );
+  const canCopy = Boolean((result || imagePrompt) && !loading);
 
   useEffect(() => {
     if (!loading || !activeAction) {
       return;
     }
 
-    const timer = window.setTimeout(() => {
-      setProcessMessage(ACTION_LOADING_LABELS[activeAction]);
-    }, 1500);
+    const timers: number[] = [];
 
-    return () => window.clearTimeout(timer);
+    if (activeAction === "illustration") {
+      timers.push(
+        window.setTimeout(
+          () => setProcessMessage(ACTION_LOADING_LABELS.illustration),
+          1500,
+        ),
+      );
+      timers.push(
+        window.setTimeout(
+          () => setProcessMessage(ILLUSTRATION_IMAGE_LOADING_LABEL),
+          5000,
+        ),
+      );
+    } else {
+      timers.push(
+        window.setTimeout(
+          () => setProcessMessage(ACTION_LOADING_LABELS[activeAction]),
+          1500,
+        ),
+      );
+    }
+
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [loading, activeAction]);
 
   function handleClear() {
     requestIdRef.current += 1;
     setUrl("");
     setResult("");
+    setImageUrl(null);
+    setImagePrompt(null);
     setSourceUrl(null);
     setActiveAction(null);
     setLoading(false);
@@ -62,12 +96,14 @@ export function ArticleProcessor() {
   }
 
   async function handleCopy() {
-    if (!result) {
+    const textToCopy = imagePrompt ?? result;
+
+    if (!textToCopy) {
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(result);
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -94,6 +130,8 @@ export function ArticleProcessor() {
     setProcessMessage(FETCHING_ARTICLE_MESSAGE);
     setError(null);
     setResult("");
+    setImageUrl(null);
+    setImagePrompt(null);
     setSourceUrl(null);
 
     const requestId = requestIdRef.current + 1;
@@ -118,14 +156,28 @@ export function ArticleProcessor() {
       }
 
       const data = (await response.json()) as {
-        result: string;
+        result?: string;
+        resultType?: "text" | "image";
         sourceUrl?: string;
+        imageUrl?: string;
+        imagePrompt?: string;
       };
       if (requestId !== requestIdRef.current) {
         return;
       }
-      setResult(data.result);
-      setSourceUrl(data.sourceUrl ?? null);
+
+      if (data.resultType === "image" && data.imageUrl) {
+        setResult("");
+        setSourceUrl(null);
+        setImageUrl(data.imageUrl);
+        setImagePrompt(data.imagePrompt ?? null);
+      } else {
+        setResult(data.result ?? "");
+        setSourceUrl(data.sourceUrl ?? null);
+        setImageUrl(null);
+        setImagePrompt(null);
+      }
+
       scrollToResults();
     } catch {
       if (requestId !== requestIdRef.current) {
@@ -189,7 +241,9 @@ export function ArticleProcessor() {
         <h2 className="text-sm font-medium text-slate-700">Выберите действие</h2>
         <div className="mt-4 flex flex-col gap-2 md:flex-row md:flex-wrap md:gap-3">
           {(Object.keys(ACTION_LABELS) as ArticleAction[]).map((action) => {
-            const isActive = activeAction === action && (loading || result.length > 0);
+            const isActive =
+              activeAction === action &&
+              (loading || result.length > 0 || Boolean(imageUrl));
 
             return (
               <button
@@ -229,7 +283,7 @@ export function ArticleProcessor() {
             disabled={!canCopy}
             className="w-full shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
-            {copied ? "Скопировано" : "Копировать"}
+            {copied ? "Скопировано" : imagePrompt ? "Копировать промпт" : "Копировать"}
           </button>
         </div>
 
@@ -241,10 +295,32 @@ export function ArticleProcessor() {
               <AlertDescription>{error.message}</AlertDescription>
             </Alert>
           ) : loading ? (
-            <div className="space-y-3">
-              <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
-              <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
-              <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200" />
+            activeAction === "illustration" ? (
+              <div className="space-y-3">
+                <div className="aspect-video w-full animate-pulse rounded-xl bg-slate-200" />
+                <div className="h-4 w-2/3 animate-pulse rounded bg-slate-200" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
+                <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
+                <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200" />
+              </div>
+            )
+          ) : imageUrl ? (
+            <div className="space-y-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt="Иллюстрация к статье"
+                className="mx-auto w-full max-w-full rounded-xl border border-slate-200 object-contain"
+              />
+              {imagePrompt && (
+                <p className="text-xs leading-6 text-slate-500 wrap-break-word">
+                  <span className="font-medium text-slate-600">Промпт:</span>{" "}
+                  {imagePrompt}
+                </p>
+              )}
             </div>
           ) : result ? (
             activeAction === "telegram" && sourceUrl ? (

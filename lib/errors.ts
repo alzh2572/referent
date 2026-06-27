@@ -9,6 +9,8 @@ export type AppErrorCode =
   | "AI_CONFIG_ERROR"
   | "AI_FAILED"
   | "AI_TIMEOUT"
+  | "IMAGE_CONFIG_ERROR"
+  | "IMAGE_FAILED"
   | "UNKNOWN";
 
 export const ERROR_MESSAGES: Record<AppErrorCode, string> = {
@@ -24,6 +26,10 @@ export const ERROR_MESSAGES: Record<AppErrorCode, string> = {
     "Сервис анализа временно недоступен. Проверьте настройки API-ключа.",
   AI_FAILED: "Не удалось сгенерировать ответ. Попробуйте ещё раз позже.",
   AI_TIMEOUT: "Превышено время ожидания ответа. Попробуйте ещё раз.",
+  IMAGE_CONFIG_ERROR:
+    "Сервис генерации изображений недоступен. Проверьте настройки API-ключа Hugging Face.",
+  IMAGE_FAILED:
+    "Не удалось сгенерировать иллюстрацию. Попробуйте ещё раз позже.",
   UNKNOWN: "Произошла непредвиденная ошибка. Попробуйте ещё раз.",
 };
 
@@ -38,6 +44,8 @@ export const ERROR_TITLES: Record<AppErrorCode, string> = {
   AI_CONFIG_ERROR: "Сервис недоступен",
   AI_FAILED: "Ошибка генерации",
   AI_TIMEOUT: "Таймаут",
+  IMAGE_CONFIG_ERROR: "Сервис недоступен",
+  IMAGE_FAILED: "Ошибка генерации",
   UNKNOWN: "Ошибка",
 };
 
@@ -71,6 +79,8 @@ const ERROR_STATUS: Record<AppErrorCode, number> = {
   AI_CONFIG_ERROR: 503,
   AI_FAILED: 502,
   AI_TIMEOUT: 504,
+  IMAGE_CONFIG_ERROR: 503,
+  IMAGE_FAILED: 502,
   UNKNOWN: 500,
 };
 

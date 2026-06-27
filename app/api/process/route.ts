@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ACTION_LABELS, type ArticleAction } from "@/lib/article-actions";
 import { AppError, toApiError } from "@/lib/errors";
+import { generateIllustration } from "@/lib/illustration";
 import {
   extractTheses,
   generateTelegramPost,
@@ -8,20 +9,36 @@ import {
 } from "@/lib/openrouter";
 import { fetchAndParseArticle, type ParsedArticle } from "@/lib/parse-article";
 
-const ACTIONS: ArticleAction[] = ["summary", "theses", "telegram"];
+const ACTIONS: ArticleAction[] = ["summary", "theses", "telegram", "illustration"];
+
+type ActionResult =
+  | { kind: "text"; result: string; sourceUrl?: string }
+  | { kind: "image"; imageUrl: string; imagePrompt: string };
 
 async function processArticleAction(
   action: ArticleAction,
   article: ParsedArticle,
   url: string,
-): Promise<string> {
+): Promise<ActionResult> {
   switch (action) {
     case "summary":
-      return summarizeArticle(article);
+      return { kind: "text", result: await summarizeArticle(article) };
     case "theses":
-      return extractTheses(article);
+      return { kind: "text", result: await extractTheses(article) };
     case "telegram":
-      return generateTelegramPost(article, url);
+      return {
+        kind: "text",
+        result: await generateTelegramPost(article, url),
+        sourceUrl: url,
+      };
+    case "illustration": {
+      const illustration = await generateIllustration(article);
+      return {
+        kind: "image",
+        imageUrl: illustration.imageUrl,
+        imagePrompt: illustration.imagePrompt,
+      };
+    }
   }
 }
 
@@ -44,13 +61,24 @@ export async function POST(request: Request) {
     }
 
     const article = await fetchAndParseArticle(url);
-    const result = await processArticleAction(action, article, url);
+    const actionResult = await processArticleAction(action, article, url);
+
+    if (actionResult.kind === "image") {
+      return NextResponse.json({
+        action: ACTION_LABELS[action],
+        resultType: "image",
+        imageUrl: actionResult.imageUrl,
+        imagePrompt: actionResult.imagePrompt,
+        article,
+      });
+    }
 
     return NextResponse.json({
-      result,
+      result: actionResult.result,
+      resultType: "text",
       action: ACTION_LABELS[action],
       article,
-      ...(action === "telegram" && { sourceUrl: url }),
+      ...(actionResult.sourceUrl && { sourceUrl: actionResult.sourceUrl }),
     });
   } catch (error) {
     const { status, body } = toApiError(error);

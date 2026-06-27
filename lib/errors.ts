@@ -10,6 +10,8 @@ export type AppErrorCode =
   | "AI_FAILED"
   | "AI_TIMEOUT"
   | "IMAGE_CONFIG_ERROR"
+  | "IMAGE_PERMISSION_DENIED"
+  | "IMAGE_MODEL_LOADING"
   | "IMAGE_FAILED"
   | "UNKNOWN";
 
@@ -28,6 +30,10 @@ export const ERROR_MESSAGES: Record<AppErrorCode, string> = {
   AI_TIMEOUT: "Превышено время ожидания ответа. Попробуйте ещё раз.",
   IMAGE_CONFIG_ERROR:
     "Сервис генерации изображений недоступен. Проверьте настройки API-ключа Hugging Face.",
+  IMAGE_PERMISSION_DENIED:
+    "У токена Hugging Face нет прав на генерацию изображений. Создайте новый токен с правом «Make calls to Inference Providers» на huggingface.co/settings/tokens.",
+  IMAGE_MODEL_LOADING:
+    "Модель генерации изображений загружается. Подождите минуту и попробуйте снова.",
   IMAGE_FAILED:
     "Не удалось сгенерировать иллюстрацию. Попробуйте ещё раз позже.",
   UNKNOWN: "Произошла непредвиденная ошибка. Попробуйте ещё раз.",
@@ -45,6 +51,8 @@ export const ERROR_TITLES: Record<AppErrorCode, string> = {
   AI_FAILED: "Ошибка генерации",
   AI_TIMEOUT: "Таймаут",
   IMAGE_CONFIG_ERROR: "Сервис недоступен",
+  IMAGE_PERMISSION_DENIED: "Нет прав токена",
+  IMAGE_MODEL_LOADING: "Модель загружается",
   IMAGE_FAILED: "Ошибка генерации",
   UNKNOWN: "Ошибка",
 };
@@ -80,6 +88,8 @@ const ERROR_STATUS: Record<AppErrorCode, number> = {
   AI_FAILED: 502,
   AI_TIMEOUT: 504,
   IMAGE_CONFIG_ERROR: 503,
+  IMAGE_PERMISSION_DENIED: 403,
+  IMAGE_MODEL_LOADING: 503,
   IMAGE_FAILED: 502,
   UNKNOWN: 500,
 };

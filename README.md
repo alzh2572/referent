@@ -20,11 +20,11 @@ pnpm dev
 | Переменная | Обязательна | Описание |
 |------------|-------------|----------|
 | `OPENROUTER_API_KEY` | да | API-ключ [OpenRouter](https://openrouter.ai/) |
-| `HUGGINGFACE_API_KEY` | да* | API-ключ [Hugging Face](https://huggingface.co/settings/tokens) для «Иллюстрация» |
+| `HUGGINGFACE_API_KEY` | да* | API-ключ [Hugging Face](https://huggingface.co/settings/tokens) с правом **Make calls to Inference Providers** |
 | `OPENAI_BASE_URL` | нет | По умолчанию `https://openrouter.ai/api/v1` |
 | `HUGGINGFACE_IMAGE_MODEL` | нет | По умолчанию `black-forest-labs/FLUX.1-schnell` |
 
-\* Обязателен только для генерации иллюстраций.
+\* Обязателен только для генерации иллюстраций. При создании токена включите право **Make calls to Inference Providers** (Fine-grained token).
 
 ## Деплой на Vercel
 
